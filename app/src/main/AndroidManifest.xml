@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="cat.oreilly.localstt">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
@@ -14,7 +13,9 @@
 
         <activity
             android:name=".SpeechActivity"
-            android:theme="@style/Theme.LocalSTT.Translucent">
+            android:theme="@style/Theme.LocalSTT.Translucent"
+            android:exported="true"
+            >
             <intent-filter>
                 <action android:name="android.speech.action.RECOGNIZE_SPEECH" />
 
@@ -89,7 +90,9 @@
             android:name=".VoskRecognitionService"
             android:icon="@drawable/ic_service_trigger"
             android:label="@string/vosk_recognition_service"
-            android:permission="android.permission.RECORD_AUDIO">
+            android:permission="android.permission.RECORD_AUDIO"
+            android:exported="true"
+            >
             <intent-filter>
 
                 <!-- The constant value is defined at RecognitionService.SERVICE_INTERFACE. -->
@@ -107,7 +110,9 @@
             android:name=".DeepSpeechRecognitionService"
             android:icon="@drawable/ic_service_trigger"
             android:label="@string/deepspeech_recognition_service"
-            android:permission="android.permission.RECORD_AUDIO">
+            android:permission="android.permission.RECORD_AUDIO"
+            android:exported="true"
+            >
             <intent-filter>
 
                 <!-- The constant value is defined at RecognitionService.SERVICE_INTERFACE. -->

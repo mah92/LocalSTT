@@ -20,12 +20,18 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.HashSet;
 
+import android.Manifest;
+import android.content.Context;
+import android.content.pm.PackageManager;
 import android.media.AudioFormat;
 import android.media.AudioRecord;
-import android.media.MediaRecorder.AudioSource;
+import android.media.MediaRecorder;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
+import android.app.Activity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 
 import org.vosk.android.RecognitionListener;
 import org.mozilla.deepspeech.libdeepspeech.DeepSpeechModel;
@@ -43,7 +49,9 @@ import com.konovalov.vad.VadConfig;
 public class DeepSpeechService {
 
     protected static final String TAG = DeepSpeechService.class.getSimpleName();
+    private static final int MY_PERMISSIONS_REQUEST_RECORD_AUDIO = 1;
 
+    private Context context;
     private final DeepSpeechModel model;
     private final DeepSpeechStreamingState streamContext;
     private final Vad vad;
@@ -51,7 +59,7 @@ public class DeepSpeechService {
     private final int sampleRate;
     private final static float BUFFER_SIZE_SECONDS = 0.4f;
     private int bufferSize;
-    private final AudioRecord recorder;
+    private AudioRecord recorder;
 
     private Thread recognizerThread;
 
@@ -66,7 +74,8 @@ public class DeepSpeechService {
      * @throws IOException thrown if audio recorder can not be created for some
      *                     reason.
      */
-    public DeepSpeechService(DeepSpeechModel model, float sampleRate) throws IOException {
+    public DeepSpeechService(Context context, DeepSpeechModel model, float sampleRate) throws IOException {
+        this.context = context;
         this.model = model;
         this.sampleRate = (int) sampleRate;
         this.streamContext = model.createStream();
@@ -75,14 +84,29 @@ public class DeepSpeechService {
                 .setFrameSize(VadConfig.FrameSize.FRAME_SIZE_480).setMode(VadConfig.Mode.NORMAL).build());
 
         bufferSize = Math.round(this.sampleRate * BUFFER_SIZE_SECONDS);
-        recorder = new AudioRecord(AudioSource.VOICE_RECOGNITION, this.sampleRate, AudioFormat.CHANNEL_IN_MONO,
+        // Check for RECORD_AUDIO permission
+        if (ContextCompat.checkSelfPermission(this.context, Manifest.permission.RECORD_AUDIO)
+                != PackageManager.PERMISSION_GRANTED) {
+
+            // Permission is not granted, request it
+            if (context instanceof Activity) {
+                ActivityCompat.requestPermissions((Activity) this.context,
+                        new String[]{Manifest.permission.RECORD_AUDIO},
+                        MY_PERMISSIONS_REQUEST_RECORD_AUDIO);
+            } else {
+                throw new IllegalStateException("Context must be an instance of Activity to request permissions.");
+            }
+        } else {
+            // Permission is already granted, initialize the recorder
+            recorder = new AudioRecord(MediaRecorder.AudioSource.VOICE_RECOGNITION, this.sampleRate, AudioFormat.CHANNEL_IN_MONO,
                 AudioFormat.ENCODING_PCM_16BIT, bufferSize * 2);
 
-        if (recorder.getState() == AudioRecord.STATE_UNINITIALIZED) {
-            recorder.release();
-            throw new IOException("Failed to initialize recorder. Microphone might be already in use.");
+            if (recorder.getState() == AudioRecord.STATE_UNINITIALIZED) {
+                recorder.release();
+                throw new IOException("Failed to initialize recorder. Microphone might be already in use.");
+            }
+            Log.i(TAG, "DeepSpeechService initialized");
         }
-        Log.i(TAG, "DeepSpeechService initialized");
     }
 
     /**

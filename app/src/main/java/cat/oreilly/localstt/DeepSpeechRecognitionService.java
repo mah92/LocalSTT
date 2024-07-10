@@ -15,6 +15,7 @@
 package cat.oreilly.localstt;
 
 import android.content.Intent;
+import android.content.Context;
 import android.os.Bundle;
 import android.os.RemoteException;
 import android.os.Handler;
@@ -44,7 +45,7 @@ public class DeepSpeechRecognitionService extends RecognitionService implements 
     protected void onStartListening(Intent intent, Callback callback) {
         mCallback = callback;
         Log.i(TAG, "onStartListening");
-        runRecognizerSetup();
+        runRecognizerSetup(this);
     }
 
     @Override
@@ -59,7 +60,7 @@ public class DeepSpeechRecognitionService extends RecognitionService implements 
         results(new Bundle(), true);
     }
 
-    private void runRecognizerSetup() {
+    private void runRecognizerSetup(Context context) {
         executor.execute(new Runnable() {
             @Override
             public void run() {
@@ -70,7 +71,7 @@ public class DeepSpeechRecognitionService extends RecognitionService implements 
                     model = new DeepSpeechModel(assetDir.toString() + "/deepspeech-catala/model.tflite");
                     model.enableExternalScorer(assetDir.toString() + "/deepspeech-catala/kenlm.scorer");
 
-                    setupRecognizer();
+                    setupRecognizer(context);
                 } catch (Exception e) {
                     Log.e(TAG, "Failed to init recognizer ");
                     error(android.speech.SpeechRecognizer.ERROR_CLIENT);
@@ -97,10 +98,18 @@ public class DeepSpeechRecognitionService extends RecognitionService implements 
         }
     }
 
-    private void setupRecognizer() throws IOException {
+    //@Override
+    //public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+    //    super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+    //    if (speechService != null) {
+    //        speechService.onRequestPermissionsResult(requestCode, permissions, grantResults);
+    //    }
+    //}
+
+    private void setupRecognizer(Context context) throws IOException {
         try {
             Log.i(TAG, "Setting up recognizer");
-            DeepSpeechService speechService = new DeepSpeechService(this.model, 16000.0f);
+            DeepSpeechService speechService = new DeepSpeechService(context, this.model, 16000.0f);
             speechService.addListener(this);
             speechService.startListening();
         } catch (IOException e) {
